@@ -27,11 +27,11 @@ namespace TD
     {
         List<LineSeries> _lines = new List<LineSeries>();
         MainViewModel _model;
-        int ThermalConductivity = 46;
-        int HeatCapacity = 460;
-        int Density = 7800;
+        double ThermalConductivity = 46;
+        double HeatCapacity = 460;
+        double Density = 7800;
 
-        Func<double, double, double> initCond;
+        Func<double, double> initCond;
 
         public MainWindow()
         {
@@ -39,20 +39,19 @@ namespace TD
             _model = new MainViewModel();
             DataContext = _model;
 
-            initCond = (x, p) => 500 + 250 * Math.Sin(Math.PI * x * p);
+            initCond = (x) => 500 + 250 * Math.Sin(Math.PI * x);
 
 
         }
 
         void Implicit(int N, double T, double alpha, double beta)
         {
-            _lines.Clear();
             //init bound conditional coef
             double k = ThermalConductivity / (HeatCapacity * Density);
             // step by x 
-            double h = 1.0 / N;
-            //step by T
-            double tau = h * h / 2;
+            double h = 1f / N;
+            //step by t
+            double tau = T * h;
             //layers
             int l = (int)(T / tau);
             double[][] impl = new double[l][]; 
@@ -70,7 +69,7 @@ namespace TD
             //начальные условия 
             for (int i = 0; i < N; i++)
             {
-                u0[i] = initCond(i, k);
+                u0[i] = initCond(i);
                 //u0[i] = sin(pi * k * i * h);
                 // cout <<u0[i] << ",  "; 
             }
@@ -84,27 +83,30 @@ namespace TD
             b = 1d / (h * h);
             c = (-1d) / tau;
 
+            //a = 1;
+            //b = 2 + h * h / (k * tau);
+            //c = 1;
+
             while (timing < T && z < l - 1 )
             {
-                timing = timing + tau;
-                z++;                //current layer
-
+                timing += tau;
+                z++;          //current layer
 
 
                 //A1 и B1 
                 Ai[0] = -b / a;
-                Bi[0] = (c * u0[1] - b * alpha * timing) / a;
+                Bi[0] = (c * u0[0] - b * alpha * timing) / a;
 
                 //Ai и Bi 
-                for (int i = 0; i < N - 1; i++)
+                for (int i = 2; i < N - 2; i++)
                 {
                     Ai[i + 1] = -b / (b * Ai[i] + a);
                     Bi[i + 1] = (c * u0[i + 1] - b * Bi[i]) / (b * Ai[i] + a);
                 }
 
                 //An-1 и Bn-1 
-                Ai[N - 1] = 0;
-                Bi[N - 1] = (c * u0[N - 1] - b * beta * timing) / (b * Ai[N - 2] + a);
+                Ai[N - 2] = 0;
+                Bi[N - 2] = (c * u0[N - 2] - b * beta * timing) / (b * Ai[N - 2] + a);
 
                 //Прогонка 
                 u[0] = alpha * timing;
@@ -114,16 +116,17 @@ namespace TD
                 impl[z][N - 2] = Bi[N - 2];
                 impl[z][N-1] = beta * timing;
 
-                for (int i = 1; i < N - 1; i++)
+                for (int i = N - 3; i > 0; i--)
                 {
-                    u[N - i - 1] = Ai[N - i - 1] * u[N - i] + Bi[N - i - 1];
-                    impl[z][N - i - 1] = u[N - i - 1];
+                    u[i] = Ai[i+1] * u[i+1] + Bi[i+1];
+                    impl[z][i] = u[i];
                 }
 
                 LineSeries curr = new LineSeries();
-                for (int i = 0; i < N; i++)
+
+                for (double i = 0, x = 0 ; i < N; i++, x += h)
                 {
-                    curr.Points.Add(new DataPoint(i, impl[z][i]));
+                    curr.Points.Add(new DataPoint(x, impl[z][(int)i]));
                 }
                 _lines.Add(curr);
                 //Запоминаем этот слой 
@@ -140,9 +143,9 @@ namespace TD
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             //insert разбиение X
-            int N = 10;
+            int N = 100;
             //insert конечное Time
-            double T = 100;
+            double T = 10;
             //insert left bound conditional coef
             double alpha = 500;
             //insert rigt bound conditional coef

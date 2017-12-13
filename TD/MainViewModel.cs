@@ -19,9 +19,9 @@ namespace TD
             this.Model.LegendBackground = OxyColor.FromAColor(200, OxyColors.White);
             this.Model.LegendBorder = OxyColors.Black;
 
-                var dateAxis = new LinearAxis() { MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, IntervalLength = 80 };
+                var dateAxis = new LinearAxis() { Position = AxisPosition.Left, MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, IntervalLength = 80, Title = "T" };
             this.Model.Axes.Add(dateAxis);
-                var valueAxis = new LinearAxis() { MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Title = "Value" };
+                var valueAxis = new LinearAxis() { Position = AxisPosition.Bottom, MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Title = "X" };
             this.Model.Axes.Add(valueAxis);
         }
 
